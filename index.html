@@ -237,6 +237,13 @@ body{
 
 .filter-row{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray1);}
 .filter-divider{width:1px;height:20px;background:var(--gray2);margin:0 6px;}
+.sort-select{
+  padding:5px 10px;border:1.5px solid var(--gray2);background:var(--white);
+  font-family:'Noto Sans KR',sans-serif;font-size:10px;font-weight:700;
+  letter-spacing:.08em;color:var(--gray4);cursor:pointer;outline:none;
+  transition:border-color .1s;
+}
+.sort-select:hover,.sort-select:focus{border-color:var(--black);}
 .chip{
   padding:5px 13px;border:1.5px solid var(--gray2);background:var(--white);
   font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
@@ -513,9 +520,9 @@ select.form-input{cursor:pointer;}
 .ep-card-time{font-size:11px;color:var(--gray3);letter-spacing:.04em;margin-bottom:6px;font-weight:700;}
 .ep-card-memo{font-size:14px;line-height:1.7;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
 .ep-card-img{
-  max-width:260px;max-height:160px;
-  border:1.5px solid var(--gray1);cursor:zoom-in;display:block;margin-top:10px;
-  object-fit:cover;
+  max-width:480px;width:100%;max-height:300px;
+  border:1.5px solid var(--gray1);cursor:zoom-in;display:block;margin-top:12px;
+  object-fit:contain;background:var(--off);
 }
 .ep-card-cap-empty{font-size:13px;color:var(--gray2);}
 .ep-card-actions{display:flex;flex-direction:column;gap:4px;}
@@ -524,17 +531,18 @@ select.form-input{cursor:pointer;}
 .watch-card-list{display:flex;flex-direction:column;gap:1px;background:var(--gray1);}
 .watch-card{
   background:var(--white);padding:14px 18px;
-  display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;
-  cursor:pointer;
+  cursor:pointer;transition:background .1s;
 }
 .watch-card:hover{background:var(--off);}
-.watch-card-date{font-family:monospace;font-size:13px;font-weight:700;color:var(--black);min-width:90px;}
-.watch-card-ep{font-size:12px;color:var(--gray3);min-width:50px;}
-.watch-card-note{font-size:13px;color:var(--ink);flex:1;min-width:120px;}
-.watch-card-with{display:flex;gap:5px;flex-wrap:wrap;}
+.watch-card-row1{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}
+.watch-card-date{font-family:monospace;font-size:13px;font-weight:700;color:var(--black);flex-shrink:0;}
+.watch-card-ep{font-size:12px;color:var(--gray3);flex-shrink:0;}
+.watch-card-note{font-size:13px;color:var(--ink);flex:1;}
+.watch-card-row2{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;align-items:center;}
+.watch-card-with-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gray3);}
 .watch-with-pill{
-  background:var(--off);border:1px solid var(--gray2);
-  padding:2px 9px;font-size:10px;font-weight:700;color:var(--gray4);letter-spacing:.02em;
+  background:var(--black);color:var(--white);
+  padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;
 }
 
 .ep-table{width:100%;border-collapse:collapse;}
@@ -779,6 +787,12 @@ select.form-input{cursor:pointer;}
       <span class="chip" data-tf="영화"         onclick="setTF(this,'영화')">영화</span>
       <span class="chip" data-tf="드라마"        onclick="setTF(this,'드라마')">드라마</span>
       <span class="chip" data-tf="애니"         onclick="setTF(this,'애니')">애니</span>
+      <div class="filter-divider"></div>
+      <select class="sort-select" id="stars-sort" onchange="setStarsSort(this.value)">
+        <option value="">별점 정렬 없음</option>
+        <option value="desc">별점 높은순</option>
+        <option value="asc">별점 낮은순</option>
+      </select>
     </div>
     <div id="works-card-view"></div>
     <table class="log-table" id="works-table-view" style="display:none">
@@ -789,7 +803,7 @@ select.form-input{cursor:pointer;}
         <th onclick="sortWorks('director')">감독</th>
         <th onclick="sortWorks('year')">연도</th>
         <th>장르</th>
-        <th onclick="sortWorks('stars')">별점</th>
+        <th onclick="starsSort=starsSort==='desc'?'asc':'desc';document.getElementById('stars-sort').value=starsSort;worksPage=1;renderWorks()">별점 ↕</th>
         <th>상태</th>
         <th></th>
       </tr></thead>
@@ -1163,9 +1177,18 @@ function renderHome(){
 }
 
 // ── WORKS ──
-let worksFilter='all', typeFilter='all', worksSort={key:null,asc:true}, worksPage=1, worksView='card';
+let worksFilter='all', typeFilter='all', worksSort={key:null,asc:true}, starsSort='', worksPage=1, worksView='card';
 const PER_PAGE=48;
 const tagState={genre:[],kw:[],cast:[]};
+
+function setStarsSort(val){
+  starsSort=val;
+  if(val){
+    // 별점 정렬 선택 시 다른 정렬 해제
+    worksSort={key:null,asc:true};
+  }
+  worksPage=1;renderWorks();
+}
 
 function setView(v){
   worksView=v;
@@ -1246,6 +1269,10 @@ function getFiltered(){
       ||(w.year||'').toString().includes(q);
     return ms&&mt&&mq;
   }).sort((a,b)=>{
+    // 별점 정렬 우선
+    if(starsSort==='desc') return (b.stars||0)-(a.stars||0);
+    if(starsSort==='asc')  return (a.stars||0)-(b.stars||0);
+    // 일반 컬럼 정렬
     if(!worksSort.key) return (b.updatedAt||0)-(a.updatedAt||0);
     let av=a[worksSort.key]||'',bv=b[worksSort.key]||'';
     return worksSort.asc?(av>bv?1:-1):(av<bv?1:-1);
@@ -1317,10 +1344,12 @@ function openDetail(id){
     ?calForWork.map(l=>{
         const withPills=(l.with||[]).map(p=>`<span class="watch-with-pill">${p}</span>`).join('');
         return `<div class="watch-card" onclick="openCalEdit('${l.id}')">
-          <div class="watch-card-date">${l.date}</div>
-          <div class="watch-card-ep">${l.ep?l.ep+'화':'-'}</div>
-          <div class="watch-card-note">${l.note||''}</div>
-          ${withPills?`<div class="watch-card-with">${withPills}</div>`:''}
+          <div class="watch-card-row1">
+            <span class="watch-card-date">${l.date}</span>
+            <span class="watch-card-ep">${l.ep?l.ep+'화':''}</span>
+            <span class="watch-card-note">${l.note||''}</span>
+          </div>
+          ${withPills?`<div class="watch-card-row2"><span class="watch-card-with-label">with</span>${withPills}</div>`:''}
         </div>`;
       }).join('')
     :`<div style="text-align:center;color:var(--gray2);padding:24px;letter-spacing:.1em;font-size:11px;text-transform:uppercase;background:var(--white)">시청 기록 없음</div>`;
