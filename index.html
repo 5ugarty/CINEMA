@@ -1943,11 +1943,35 @@ function initTagInput(wrapId,inputId,hiddenId,ddId,listKey,stateKey){
   tagState[stateKey]=[];
   const wrap=document.getElementById(wrapId);wrap.innerHTML='';
   const inp=document.createElement('input');
-  inp.id=inputId;inp.placeholder='입력 후 Enter';
-  inp.style.cssText='border:none;outline:none;font-family:inherit;font-size:12px;background:transparent;color:#aaa;flex:1;min-width:80px;';
+  inp.id=inputId;inp.placeholder='입력 후 Enter · 쉼표로 여러 개';
+  inp.style.cssText='border:none;outline:none;font-family:inherit;font-size:12px;background:transparent;color:var(--ink);flex:1;min-width:120px;';
   wrap.appendChild(inp);
-  inp.oninput=()=>tagAcShow(inputId,ddId,listKey,stateKey,wrapId,hiddenId);
-  inp.onkeydown=e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addTag(stateKey,inp.value.trim(),wrapId,inputId,hiddenId,ddId);}};
+  inp.oninput=()=>{
+    // 입력 중 쉼표가 포함되면 즉시 분리 처리
+    if(inp.value.includes(',')){
+      const parts=inp.value.split(',');
+      // 마지막 조각(쉼표 뒤)은 남기고 앞 조각들은 태그로 등록
+      parts.slice(0,-1).forEach(p=>{ if(p.trim()) addTag(stateKey,p.trim(),wrapId,inputId,hiddenId,ddId); });
+      inp.value=parts[parts.length-1];
+    }
+    tagAcShow(inputId,ddId,listKey,stateKey,wrapId,hiddenId);
+  };
+  inp.onkeydown=e=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const parts=inp.value.split(',').map(x=>x.trim()).filter(Boolean);
+      parts.forEach(p=>addTag(stateKey,p,wrapId,inputId,hiddenId,ddId));
+      inp.value='';
+      document.getElementById(ddId).classList.remove('open');
+    }
+  };
+  // 붙여넣기 시 쉼표로 한 번에 분리
+  inp.addEventListener('paste',e=>{
+    e.preventDefault();
+    const text=(e.clipboardData||window.clipboardData).getData('text');
+    const parts=text.split(',').map(x=>x.trim()).filter(Boolean);
+    parts.forEach(p=>addTag(stateKey,p,wrapId,inputId,hiddenId,ddId));
+  });
 }
 function tagAcShow(inputId,ddId,listKey,stateKey,wrapId,hiddenId){
   const inp=document.getElementById(inputId);
