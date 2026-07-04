@@ -572,16 +572,15 @@ select.form-input{cursor:pointer;}
 .star-half-btn.left{left:0;}
 .star-half-btn.right{right:0;}
 
-/* ─── STAR DISPLAY (read-only, supports half) ─── */
 .stars-display{display:inline-flex;line-height:1;gap:1px;}
 .sd-star{position:relative;display:inline-block;color:var(--gray1);}
-.sd-star.full{color:inherit;}
-.sd-star.half .sd-bg{color:var(--gray1);}
+.sd-star.full{color:var(--black);}
+.sd-star.half{overflow:hidden;}
+.sd-star.half .sd-bg{color:var(--gray1);display:block;}
 .sd-star.half .sd-fg{
-  position:absolute;left:0;top:0;width:50%;overflow:hidden;color:inherit;
-  white-space:nowrap;
+  position:absolute;left:0;top:0;width:50%;overflow:hidden;
+  color:var(--black);white-space:nowrap;display:block;
 }
-
 /* ─── TAG INPUT ─── */
 .tag-wrap{
   border:1.5px solid var(--gray1);padding:6px 10px;background:var(--white);
