@@ -330,22 +330,51 @@ body{
 .cal-cell{
   background:var(--white);
   border-right:1px solid var(--gray1);border-bottom:1px solid var(--gray1);
-  min-height:96px;padding:8px;cursor:pointer;transition:background .1s;
+  min-height:110px;padding:8px;cursor:pointer;transition:background .1s;
 }
 .cal-cell:hover{background:var(--off);}
 .cal-cell.today{background:var(--black);}
 .cal-cell.today .cal-date{color:var(--white);}
-.cal-cell.today .cal-entry{background:#333;color:#ccc;border-left-color:#aaa;}
 .cal-cell.other-month{background:var(--off);pointer-events:none;}
 .cal-cell.other-month .cal-date{display:none;}
 .cal-date{font-size:12px;font-weight:700;color:var(--gray3);margin-bottom:5px;font-family:monospace;}
 .cal-entry{
   background:var(--off);border-left:2px solid var(--black);
-  padding:3px 6px;margin-bottom:2px;font-size:11px;color:var(--gray4);
-  line-height:1.3;word-break:keep-all;cursor:pointer;
+  padding:0;margin-bottom:3px;cursor:pointer;overflow:hidden;
+  display:flex;align-items:stretch;
 }
+.cal-entry:hover{filter:brightness(.97);}
 .cal-entry.type-드라마{border-left-color:var(--gray3);}
 .cal-entry.type-애니{border-left-color:var(--gray2);}
+.cal-entry.today-style{border-left-color:#fff;}
+.cal-entry-thumb{
+  width:28px;flex-shrink:0;
+  background:var(--gray1);object-fit:cover;
+  display:block;align-self:stretch;
+}
+.cal-entry-thumb-empty{
+  width:28px;flex-shrink:0;background:var(--gray2);
+}
+.cal-entry-info{
+  padding:4px 6px;min-width:0;flex:1;
+}
+.cal-entry-title{
+  font-size:11px;font-weight:700;color:var(--gray4);
+  line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cal-entry-ep{font-size:10px;color:var(--gray3);}
+.cal-entry-with{
+  display:flex;gap:3px;flex-wrap:wrap;margin-top:2px;
+}
+.cal-entry-with-pill{
+  font-size:9px;font-weight:700;color:var(--white);
+  background:var(--black);padding:1px 5px;
+}
+/* today cell 안에서 색 반전 */
+.cal-cell.today .cal-entry{background:#222;}
+.cal-cell.today .cal-entry-title{color:#ddd;}
+.cal-cell.today .cal-entry-ep{color:#888;}
+.cal-cell.today .cal-entry-with-pill{background:#555;}
 
 /* ─── MEMO ─── */
 .memo-page-header{
@@ -453,6 +482,7 @@ body{
 select.form-input{cursor:pointer;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--gray1);}
+#namu-url-input:focus{border-color:var(--black);}
 .close-btn{
   background:none;border:1px solid #555;width:28px;height:28px;
   cursor:pointer;font-size:13px;color:#aaa;
@@ -922,6 +952,29 @@ select.form-input{cursor:pointer;}
     </div>
     <div class="modal-body">
       <input type="hidden" id="edit-id">
+
+      <!-- 나무위키 자동 채우기 -->
+      <div class="form-group" id="namu-fill-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:8px">
+          TMDB 자동 채우기
+          <span style="font-size:10px;color:var(--gray3);font-weight:400;letter-spacing:.02em">· 제목으로 검색하면 정보를 자동으로 가져와요</span>
+        </label>
+        <div style="display:flex;gap:6px;align-items:stretch">
+          <input class="form-input" id="tmdb-search-input" placeholder="한국어 또는 영어 제목으로 검색..." style="flex:1"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();tmdbSearch();}">
+          <select class="form-input" id="tmdb-type-select" style="width:90px;flex-shrink:0">
+            <option value="multi">전체</option>
+            <option value="movie">영화</option>
+            <option value="tv">드라마</option>
+          </select>
+          <button class="btn btn-primary" onclick="tmdbSearch()" style="flex-shrink:0;white-space:nowrap">검색</button>
+        </div>
+        <div id="tmdb-results" style="display:none;margin-top:8px;border:1.5px solid var(--black);background:var(--white);max-height:280px;overflow-y:auto"></div>
+        <div id="tmdb-status" style="display:none;margin-top:8px;padding:10px 14px;font-size:12px;border:1px solid var(--gray1);color:var(--gray4)"></div>
+      </div>
+      <div style="border-top:1px solid var(--gray1);margin:16px 0 20px;position:relative">
+        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--white);padding:0 12px;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray3)">또는 직접 입력</span>
+      </div>
       <div class="form-group">
         <label class="form-label">포스터</label>
         <div class="img-drop" id="poster-drop" tabindex="0">
@@ -1094,10 +1147,29 @@ if(!settings.actors) settings.actors=[];
 if(!settings.companions) settings.companions=[];
 
 function save(){
-  localStorage.setItem('cl_works',    JSON.stringify(works));
-  localStorage.setItem('cl_cal',      JSON.stringify(calLogs));
-  localStorage.setItem('cl_memos',    JSON.stringify(memos));
-  localStorage.setItem('cl_settings', JSON.stringify(settings));
+  try{
+    localStorage.setItem('cl_works',    JSON.stringify(works));
+    localStorage.setItem('cl_cal',      JSON.stringify(calLogs));
+    localStorage.setItem('cl_memos',    JSON.stringify(memos));
+    localStorage.setItem('cl_settings', JSON.stringify(settings));
+  }catch(e){
+    // QuotaExceededError — 포스터 이미지 용량 초과 가능성
+    if(e.name==='QuotaExceededError'||e.code===22){
+      // 포스터만 제거한 버전으로 재시도
+      const worksLight=works.map(w=>({...w,poster:''}));
+      try{
+        localStorage.setItem('cl_works', JSON.stringify(worksLight));
+        localStorage.setItem('cl_cal',   JSON.stringify(calLogs));
+        localStorage.setItem('cl_memos', JSON.stringify(memos));
+        localStorage.setItem('cl_settings',JSON.stringify(settings));
+        alert('⚠️ 저장 용량 초과로 포스터 이미지가 저장되지 않았어요.\n이미지 파일 크기를 줄이거나 PNG 대신 JPG를 사용해보세요.\n(나머지 데이터는 정상 저장됐어요)');
+      }catch(e2){
+        alert('저장에 실패했어요. 브라우저 저장 용량이 가득 찼을 수 있어요.');
+      }
+    } else {
+      alert('저장 중 오류가 발생했어요: '+e.message);
+    }
+  }
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
@@ -1516,12 +1588,18 @@ function openAddModal(){
   initTagInput('kw-wrap','kw-input','input-kw','ac-kw','keywords','kw');
   initTagInput('cast-wrap','cast-input','input-cast','ac-cast','actors','cast');
   setImgPreview('poster-preview','poster-ph','poster-rm-btn','input-poster','');
+  // 자동채우기 UI 초기화
+  document.getElementById('namu-fill-group').style.display='';
+  document.getElementById('namu-url-input').value='';
+  document.getElementById('namu-status').style.display='none';
   document.getElementById('add-modal').classList.add('open');
 }
 function openEditModal(id){
   const w=works.find(x=>x.id===id); if(!w) return;
   document.getElementById('add-modal-title').textContent='작품 수정';
   document.getElementById('edit-id').value=id;
+  // 수정 시엔 자동채우기 숨김
+  document.getElementById('namu-fill-group').style.display='none';
   document.getElementById('input-title').value=w.title||'';
   document.getElementById('input-orig-title').value=w.origTitle||'';
   document.getElementById('input-year').value=w.year||'';
@@ -1601,7 +1679,18 @@ function renderCalendar(){
     const dayLogs=calLogs.filter(l=>l.date===dateStr);
     const entries=dayLogs.map(l=>{
       const w=works.find(x=>x.id===l.workId);
-      return `<div class="cal-entry type-${w?.type||''}" onclick="event.stopPropagation();openCalEdit('${l.id}')">${w?.title||'?'}${l.ep?' '+l.ep+'화':''}</div>`;
+      const withPills=(l.with||[]).map(p=>`<span class="cal-entry-with-pill">${p}</span>`).join('');
+      const thumb=w?.poster
+        ?`<img class="cal-entry-thumb" src="${w.poster}">`
+        :`<div class="cal-entry-thumb-empty"></div>`;
+      return `<div class="cal-entry type-${w?.type||''}" onclick="event.stopPropagation();openCalEdit('${l.id}')">
+        ${thumb}
+        <div class="cal-entry-info">
+          <div class="cal-entry-title">${w?.title||'?'}</div>
+          ${l.ep?`<div class="cal-entry-ep">${l.ep}화</div>`:''}
+          ${withPills?`<div class="cal-entry-with">${withPills}</div>`:''}
+        </div>
+      </div>`;
     }).join('');
     html+=`<div class="cal-cell${isToday?' today':''}" onclick="openCalModalDate('${dateStr}')">
       <div class="cal-date">${String(d).padStart(2,'0')}</div>${entries}
@@ -1769,6 +1858,15 @@ function renderSettings(){
       <button class="btn" onclick="document.getElementById('import-input').click()">JSON 가져오기</button>
       <button class="btn btn-danger" onclick="confirmReset()">전체 초기화</button>
     </div>
+  </div>
+  <div class="s-card">
+    <div class="s-card-head"><span>TMDB API 키</span><span style="font-weight:300;font-size:9px">${getTmdbKey()?'연결됨':'미설정'}</span></div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <p style="font-size:11px;color:var(--gray3);line-height:1.7">themoviedb.org에서 발급한 API Read Access Token(v4) 또는 API Key(v3)를 입력하세요.</p>
+      <input class="form-input" id="tmdb-key-input" type="password" placeholder="API Key 또는 Bearer Token"
+        value="${getTmdbKey()}" style="font-family:monospace;font-size:11px">
+      <button class="btn btn-primary btn-sm" onclick="saveTmdbKey()" style="align-self:flex-end">저장</button>
+    </div>
   </div>`;
 }
 function addSetting(key){
@@ -1779,6 +1877,173 @@ function addSetting(key){
   save();renderSettings();
 }
 function delSetting(key,idx){settings[key].splice(idx,1);save();renderSettings();}
+
+// ── TMDB ──
+function getTmdbKey(){ return localStorage.getItem('cl_tmdb_key')||''; }
+function saveTmdbKey(){
+  const key=(document.getElementById('tmdb-key-input')?.value||'').trim();
+  localStorage.setItem('cl_tmdb_key', key);
+  renderSettings();
+  alert(key ? 'API 키가 저장됐어요.' : 'API 키가 삭제됐어요.');
+}
+
+const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
+
+async function tmdbSearch(){
+  const q = document.getElementById('tmdb-search-input').value.trim();
+  const type = document.getElementById('tmdb-type-select').value;
+  const key = getTmdbKey();
+  const resultsEl = document.getElementById('tmdb-results');
+  const statusEl = document.getElementById('tmdb-status');
+
+  if(!q){ statusEl.style.display='block'; statusEl.textContent='검색어를 입력해주세요.'; return; }
+  if(!key){
+    statusEl.style.display='block';
+    statusEl.style.borderColor='#a33'; statusEl.style.color='#a33';
+    statusEl.innerHTML='⚠️ 설정 페이지에서 TMDB API 키를 먼저 입력해주세요.';
+    return;
+  }
+
+  statusEl.style.display='block';
+  statusEl.style.borderColor='var(--gray1)'; statusEl.style.color='var(--gray4)';
+  statusEl.textContent='검색 중...';
+  resultsEl.style.display='none';
+
+  try{
+    // v3 API key 또는 v4 bearer 자동 판별
+    const isBearer = key.length > 100;
+    const headers = isBearer
+      ? { 'Authorization': 'Bearer '+key }
+      : {};
+
+    const endpoint = type==='multi'
+      ? `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(q)}&language=ko-KR&include_adult=false`
+      : `https://api.themoviedb.org/3/search/${type}?query=${encodeURIComponent(q)}&language=ko-KR&include_adult=false`;
+    const url = isBearer ? endpoint : endpoint + `&api_key=${key}`;
+
+    const res = await fetch(url, { headers });
+    if(!res.ok) throw new Error(`API 오류 ${res.status} — 키를 확인해주세요`);
+    const data = await res.json();
+
+    const items = (data.results||[]).filter(r=>r.media_type!=='person').slice(0,8);
+    if(!items.length){ statusEl.textContent='검색 결과가 없어요.'; return; }
+
+    statusEl.style.display='none';
+    resultsEl.style.display='block';
+    resultsEl.innerHTML = items.map((item,i)=>{
+      const title = item.title||item.name||'제목 없음';
+      const origTitle = item.original_title||item.original_name||'';
+      const year = (item.release_date||item.first_air_date||'').slice(0,4);
+      const mtype = item.media_type==='movie'||(!item.media_type&&item.title) ? '영화' : '드라마';
+      const thumb = item.poster_path ? `<img src="${TMDB_IMG}${item.poster_path}" style="width:36px;height:54px;object-fit:cover;flex-shrink:0;border:1px solid var(--gray1)">` : `<div style="width:36px;height:54px;background:var(--gray1);flex-shrink:0"></div>`;
+      return `<div onclick="tmdbSelect(${item.id},'${item.media_type||( item.title?'movie':'tv')}')"
+        style="display:flex;gap:12px;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--gray1);transition:background .1s"
+        onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background=''">
+        ${thumb}
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:13px;color:var(--black)">${title}</div>
+          <div style="font-size:11px;color:var(--gray3);margin-top:2px">${origTitle}${year?' · '+year:''} · ${mtype}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    statusEl.style.display='block';
+    statusEl.style.borderColor='#a33'; statusEl.style.color='#a33';
+    statusEl.textContent='실패: '+e.message;
+    resultsEl.style.display='none';
+  }
+}
+
+async function tmdbSelect(id, mediaType){
+  const key = getTmdbKey();
+  const isBearer = key.length > 100;
+  const headers = isBearer ? { 'Authorization': 'Bearer '+key } : {};
+  const apiKey = isBearer ? '' : `?api_key=${key}`;
+  const qs = isBearer ? '?language=ko-KR' : `?api_key=${key}&language=ko-KR`;
+  const resultsEl = document.getElementById('tmdb-results');
+  const statusEl = document.getElementById('tmdb-status');
+
+  resultsEl.style.display='none';
+  statusEl.style.display='block';
+  statusEl.style.borderColor='var(--gray1)'; statusEl.style.color='var(--gray4)';
+  statusEl.textContent='상세 정보를 가져오는 중...';
+
+  try{
+    const type = mediaType==='movie' ? 'movie' : 'tv';
+    const detailUrl = `https://api.themoviedb.org/3/${type}/${id}${qs}&append_to_response=credits`;
+    const res = await fetch(detailUrl, { headers });
+    if(!res.ok) throw new Error('상세 정보 오류 '+res.status);
+    const d = await res.json();
+
+    // 한국어 없으면 영어로 폴백
+    let title = d.title||d.name||'';
+    let origTitle = d.original_title||d.original_name||'';
+    const year = (d.release_date||d.first_air_date||'').slice(0,4);
+    const workType = type==='movie' ? '영화' : '드라마';
+
+    // 장르
+    const genres = (d.genres||[]).map(g=>g.name);
+
+    // 크레딧
+    const credits = d.credits||{};
+    // 감독 (영화) 또는 연출 (TV)
+    let director = '';
+    if(type==='movie'){
+      const dir = (credits.crew||[]).find(c=>c.job==='Director');
+      director = dir ? dir.name : '';
+    } else {
+      // TV: created_by 또는 crew에서 Director
+      director = (d.created_by||[]).map(c=>c.name).join(', ') ||
+                 (credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name).slice(0,2).join(', ');
+    }
+
+    // 주연 (cast 상위 6명)
+    const cast = (credits.cast||[]).slice(0,6).map(c=>c.name);
+
+    // 포스터
+    const posterPath = d.poster_path;
+
+    // 폼에 채우기
+    if(title)     document.getElementById('input-title').value = title;
+    if(origTitle) document.getElementById('input-orig-title').value = origTitle;
+    if(year)      document.getElementById('input-year').value = year;
+    document.getElementById('input-type').value = workType;
+    if(director)  document.getElementById('input-director').value = director;
+
+    if(genres.length){
+      genres.forEach(g=>{ const s=new Set(settings.genres);s.add(g);settings.genres=[...s]; });
+      setTagsArr('genre', genres, 'genre-wrap', 'genre-input', 'input-genre');
+    }
+    if(cast.length){
+      cast.forEach(c=>{ const s=new Set(settings.actors);s.add(c);settings.actors=[...s]; });
+      setTagsArr('cast', cast, 'cast-wrap', 'cast-input', 'input-cast');
+    }
+
+    // 포스터 다운로드
+    if(posterPath){
+      try{
+        const imgRes = await fetch(TMDB_IMG+posterPath);
+        const blob = await imgRes.blob();
+        fileToDataUrl(new File([blob],'poster.jpg',{type:'image/jpeg'}),
+          url=>setImgPreview('poster-preview','poster-ph','poster-rm-btn','input-poster',url),
+          400, true);
+        statusEl.style.borderColor='#1a8a3a'; statusEl.style.color='#1a6a2a';
+        statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 모두 채웠어요. (포스터 포함)`;
+      }catch(_){
+        statusEl.style.borderColor='#1a8a3a'; statusEl.style.color='#1a6a2a';
+        statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 채웠어요. 포스터는 직접 추가해주세요.`;
+      }
+    } else {
+      statusEl.style.borderColor='#1a8a3a'; statusEl.style.color='#1a6a2a';
+      statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 채웠어요.`;
+    }
+    document.getElementById('tmdb-search-input').value='';
+
+  }catch(e){
+    statusEl.style.borderColor='#a33'; statusEl.style.color='#a33';
+    statusEl.textContent='실패: '+e.message;
+  }
+}
 
 // ── EXPORT / IMPORT ──
 function exportData(){
@@ -2058,9 +2323,9 @@ function setImgPreview(imgId,phId,rmId,hiddenId,dataUrl){
   if(dataUrl){img.src=dataUrl;img.style.display='block';ph.style.display='none';rm.style.display='inline-block';}
   else{img.src='';img.style.display='none';ph.style.display='block';rm.style.display='none';}
 }
-function fileToDataUrl(file,cb,maxDim){
+function fileToDataUrl(file,cb,maxDim,forceJpeg){
   if(!file||!file.type.startsWith('image/'))return;
-  maxDim=maxDim||600;
+  maxDim=maxDim||400;
   const reader=new FileReader();
   reader.onload=e=>{
     const img=new Image();
@@ -2072,19 +2337,20 @@ function fileToDataUrl(file,cb,maxDim){
       }
       const cv=document.createElement('canvas');cv.width=width;cv.height=height;
       const ctx=cv.getContext('2d');ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,width,height);
-      cb(file.type==='image/png'?cv.toDataURL('image/png'):cv.toDataURL('image/jpeg',.9));
+      // 포스터는 무조건 JPEG로 압축 (PNG도 포함), 캡처 이미지만 원본 포맷 유지
+      cb((!forceJpeg && file.type==='image/png') ? cv.toDataURL('image/png') : cv.toDataURL('image/jpeg',.82));
     };img.src=e.target.result;
   };reader.readAsDataURL(file);
 }
-function setupImgDrop(dropId,fileId,imgId,phId,rmId,hiddenId,pickId,maxDim){
+function setupImgDrop(dropId,fileId,imgId,phId,rmId,hiddenId,pickId,maxDim,forceJpeg){
   const drop=document.getElementById(dropId);const fi=document.getElementById(fileId);
   const rm=document.getElementById(rmId);const pick=document.getElementById(pickId);
   drop.addEventListener('click',e=>{if(e.target===rm||e.target===pick)return;drop.focus();});
   pick.addEventListener('click',e=>{e.stopPropagation();fi.click();});
-  fi.addEventListener('change',()=>{if(fi.files[0])fileToDataUrl(fi.files[0],url=>setImgPreview(imgId,phId,rmId,hiddenId,url),maxDim);fi.value='';});
+  fi.addEventListener('change',()=>{if(fi.files[0])fileToDataUrl(fi.files[0],url=>setImgPreview(imgId,phId,rmId,hiddenId,url),maxDim,forceJpeg);fi.value='';});
   const handlePaste=e=>{
     const items=e.clipboardData?.items;if(!items)return;
-    for(const item of items){if(item.type.startsWith('image/')){fileToDataUrl(item.getAsFile(),url=>setImgPreview(imgId,phId,rmId,hiddenId,url),maxDim);e.preventDefault();break;}}
+    for(const item of items){if(item.type.startsWith('image/')){fileToDataUrl(item.getAsFile(),url=>setImgPreview(imgId,phId,rmId,hiddenId,url),maxDim,forceJpeg);e.preventDefault();break;}}
   };
   drop.addEventListener('paste',handlePaste);
   document.addEventListener('paste',e=>{if(document.activeElement===drop)handlePaste(e);});
@@ -2096,8 +2362,8 @@ document.addEventListener('click',e=>{
 });
 
 // ── INIT ──
-setupImgDrop('poster-drop','poster-file','poster-preview','poster-ph','poster-rm-btn','input-poster','poster-pick-btn');
-setupImgDrop('ep-img-drop','ep-img-file','ep-img-preview','ep-img-ph','ep-img-rm-btn','ep-img','ep-img-pick-btn',1100);
+setupImgDrop('poster-drop','poster-file','poster-preview','poster-ph','poster-rm-btn','input-poster','poster-pick-btn',400,true);
+setupImgDrop('ep-img-drop','ep-img-file','ep-img-preview','ep-img-ph','ep-img-rm-btn','ep-img','ep-img-pick-btn',1100,false);
 // edition date
 (function(){const d=new Date();document.getElementById('edition-date').textContent=d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0');})();
 renderHome();
