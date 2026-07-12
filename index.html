@@ -330,7 +330,7 @@ body{
 .cal-cell{
   background:var(--white);
   border-right:1px solid var(--gray1);border-bottom:1px solid var(--gray1);
-  min-height:110px;padding:8px;cursor:pointer;transition:background .1s;
+  min-height:140px;padding:6px;cursor:pointer;transition:background .1s;
 }
 .cal-cell:hover{background:var(--off);}
 .cal-cell.today{background:var(--black);}
@@ -338,43 +338,72 @@ body{
 .cal-cell.other-month{background:var(--off);pointer-events:none;}
 .cal-cell.other-month .cal-date{display:none;}
 .cal-date{font-size:12px;font-weight:700;color:var(--gray3);margin-bottom:5px;font-family:monospace;}
+/* ─── CAL ENTRY (단일) ─── */
 .cal-entry{
-  background:var(--off);border-left:2px solid var(--black);
-  padding:0;margin-bottom:3px;cursor:pointer;overflow:hidden;
-  display:flex;align-items:stretch;
+  background:var(--white);
+  border:1px solid var(--gray1);
+  border-left:3px solid var(--black);
+  margin-bottom:4px;cursor:pointer;overflow:hidden;
+  display:flex;flex-direction:column;
+  transition:box-shadow .1s;
 }
-.cal-entry:hover{filter:brightness(.97);}
+.cal-entry:hover{box-shadow:2px 2px 0 var(--black);}
 .cal-entry.type-드라마{border-left-color:var(--gray3);}
 .cal-entry.type-애니{border-left-color:var(--gray2);}
-.cal-entry.today-style{border-left-color:#fff;}
 .cal-entry-thumb{
-  width:28px;flex-shrink:0;
-  background:var(--gray1);object-fit:cover;
-  display:block;align-self:stretch;
+  width:100%;aspect-ratio:3/4;
+  object-fit:cover;display:block;
+  border-bottom:1px solid var(--gray1);
 }
 .cal-entry-thumb-empty{
-  width:28px;flex-shrink:0;background:var(--gray2);
+  width:100%;aspect-ratio:3/4;
+  background:var(--gray1);
 }
-.cal-entry-info{
-  padding:4px 6px;min-width:0;flex:1;
-}
+.cal-entry-info{padding:5px 6px;min-width:0;}
 .cal-entry-title{
-  font-size:11px;font-weight:700;color:var(--gray4);
-  line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:11px;font-weight:700;color:var(--black);
+  line-height:1.3;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
 }
-.cal-entry-ep{font-size:10px;color:var(--gray3);}
-.cal-entry-with{
-  display:flex;gap:3px;flex-wrap:wrap;margin-top:2px;
-}
+.cal-entry-ep{font-size:10px;color:var(--gray3);margin-top:2px;}
+.cal-entry-with{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px;}
 .cal-entry-with-pill{
   font-size:9px;font-weight:700;color:var(--white);
   background:var(--black);padding:1px 5px;
 }
-/* today cell 안에서 색 반전 */
-.cal-cell.today .cal-entry{background:#222;}
-.cal-cell.today .cal-entry-title{color:#ddd;}
+
+/* ─── CAL MULTI (2개 이상) ─── */
+.cal-multi{display:grid;grid-template-columns:repeat(auto-fill,minmax(44%,1fr));gap:3px;}
+.cal-multi-item{
+  position:relative;cursor:pointer;overflow:hidden;
+  border:1px solid var(--gray1);border-left:3px solid var(--black);
+}
+.cal-multi-item.type-드라마{border-left-color:var(--gray3);}
+.cal-multi-item.type-애니{border-left-color:var(--gray2);}
+.cal-multi-thumb{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;}
+.cal-multi-thumb-empty{width:100%;aspect-ratio:2/3;background:var(--gray1);}
+.cal-multi-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to top, rgba(0,0,0,.82) 0%, transparent 55%);
+  opacity:0;transition:opacity .15s;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:5px 5px 4px;
+}
+.cal-multi-item:hover .cal-multi-overlay{opacity:1;}
+.cal-multi-title{font-size:10px;font-weight:700;color:#fff;line-height:1.3;word-break:keep-all;}
+.cal-multi-ep{font-size:9px;color:#ccc;margin-top:1px;}
+.cal-multi-with{display:flex;gap:2px;flex-wrap:wrap;margin-top:2px;}
+.cal-multi-with-pill{font-size:8px;font-weight:700;color:#fff;background:rgba(255,255,255,.25);padding:1px 4px;}
+
+/* today 보정 */
+.cal-cell.today .cal-entry{background:#1a1a1a;border-color:#444;border-left-color:#fff;}
+.cal-cell.today .cal-entry-title{color:#eee;}
 .cal-cell.today .cal-entry-ep{color:#888;}
 .cal-cell.today .cal-entry-with-pill{background:#555;}
+.cal-cell.today .cal-entry-thumb-empty{background:#2a2a2a;}
+.cal-cell.today .cal-entry-thumb{border-bottom-color:#333;}
+.cal-cell.today .cal-multi-item{border-color:#444;}
+.cal-cell.today .cal-multi-thumb-empty{background:#2a2a2a;}
 
 /* ─── MEMO ─── */
 .memo-page-header{
@@ -1012,7 +1041,7 @@ select.form-input{cursor:pointer;}
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">상태</label><select class="form-input" id="input-status"><option>봄</option><option>예정</option><option>중단</option></select></div>
-        <div class="form-group"><label class="form-label">완결 여부</label><select class="form-input" id="input-finished"><option>완결</option><option>방영 중</option><option>방영 예정</option><option>방영 중단</option></select></div>
+        <div class="form-group"><label class="form-label">정주행 횟수 <span style="font-weight:400;color:var(--gray3)">/ 봄 상태일 때 배지에 표시</span></label><input class="form-input" id="input-finished" type="number" min="1" placeholder="1" style="appearance:none"></div>
       </div>
       <div class="form-group"><label class="form-label">감상 메모</label><textarea class="form-input" id="input-note" rows="3" placeholder="간단한 감상..."></textarea></div>
       <div class="form-actions">
@@ -1271,8 +1300,12 @@ function setView(v){
   renderWorks();
 }
 
-function statusBadge(s){
-  if(s==='봄') return '<span class="badge badge-봄">봄</span>';
+function statusBadge(s, finished){
+  if(s==='봄'){
+    const n = parseInt(finished)||1;
+    const label = n>1 ? `${n}회` : '봄';
+    return `<span class="badge badge-봄">${label}</span>`;
+  }
   if(s==='중단') return '<span class="badge badge-중단">중단</span>';
   return '<span class="badge badge-예정">예정</span>';
 }
@@ -1293,9 +1326,10 @@ function cardHTML(w){
     ? `<img class="card-poster" src="${w.poster}">`
     : `<div class="card-poster-empty"><div class="card-poster-empty-txt">NO IMAGE</div></div>`;
   const badge = w.status==='봄'?'csb-봄':w.status==='중단'?'csb-중단':'csb-예정';
+  const badgeLabel = w.status==='봄' ? (parseInt(w.finished)>1 ? `${parseInt(w.finished)}회` : '봄') : w.status;
   return `<div class="media-card" onclick="openDetail('${w.id}')">
     ${poster}
-    <div class="card-status-badge ${badge}">${w.status}</div>
+    <div class="card-status-badge ${badge}">${badgeLabel}</div>
     <div class="card-body">
       <div class="card-typeline">${w.type||'—'} ${w.year?'· '+w.year:''}</div>
       <div class="card-title">${w.title}</div>
@@ -1318,7 +1352,7 @@ function tableRowHTML(w){
     <td style="font-family:monospace">${w.year||'-'}</td>
     <td style="font-size:10px;color:#888">${genres||'-'}</td>
     <td style="letter-spacing:2px;color:#888">${starsStr(w.stars)}</td>
-    <td>${statusBadge(w.status)}</td>
+    <td>${statusBadge(w.status, w.finished)}</td>
     <td onclick="event.stopPropagation()">
       <div style="display:flex;gap:4px">
         <button class="btn btn-ghost btn-sm" onclick="openEditModal('${w.id}')">수정</button>
@@ -1439,7 +1473,7 @@ function openDetail(id){
           ${w.platform?`<span>${w.platform}</span>`:''}
         </div>
         <div class="detail-stars">${starsStr(w.stars)}</div>
-        <div style="margin-top:8px">${statusBadge(w.status)}</div>
+        <div style="margin-top:8px">${statusBadge(w.status, w.finished)}</div>
       </div>
     </div>
     <div class="detail-body">
@@ -1588,10 +1622,15 @@ function openAddModal(){
   initTagInput('kw-wrap','kw-input','input-kw','ac-kw','keywords','kw');
   initTagInput('cast-wrap','cast-input','input-cast','ac-cast','actors','cast');
   setImgPreview('poster-preview','poster-ph','poster-rm-btn','input-poster','');
-  // 자동채우기 UI 초기화
-  document.getElementById('namu-fill-group').style.display='';
-  document.getElementById('namu-url-input').value='';
-  document.getElementById('namu-status').style.display='none';
+  // TMDB 자동채우기 UI 초기화
+  const fillGroup = document.getElementById('namu-fill-group');
+  if(fillGroup) fillGroup.style.display='';
+  const tmdbInput = document.getElementById('tmdb-search-input');
+  if(tmdbInput) tmdbInput.value='';
+  const tmdbResults = document.getElementById('tmdb-results');
+  if(tmdbResults) tmdbResults.style.display='none';
+  const tmdbStatus = document.getElementById('tmdb-status');
+  if(tmdbStatus) tmdbStatus.style.display='none';
   document.getElementById('add-modal').classList.add('open');
 }
 function openEditModal(id){
@@ -1609,7 +1648,7 @@ function openEditModal(id){
   document.getElementById('input-note').value=w.note||'';
   document.getElementById('input-type').value=w.type||'영화';
   document.getElementById('input-status').value=w.status||'봄';
-  document.getElementById('input-finished').value=w.finished||'완결';
+  document.getElementById('input-finished').value = parseInt(w.finished)||'';
   fillPlatformSelect(w.platform||'');
   renderStarRow();
   setStar(w.stars||0);
@@ -1647,7 +1686,7 @@ function saveWork(){
     stars:parseFloat(document.getElementById('input-stars').value)||0,
     totalEp:parseInt(document.getElementById('input-total-ep').value)||0,
     status:document.getElementById('input-status').value,
-    finished:document.getElementById('input-finished').value,
+    finished:parseInt(document.getElementById('input-finished').value)||0,
     note:document.getElementById('input-note').value.trim(),
     poster:document.getElementById('input-poster').value,
     episodes:existing?.episodes||[],
@@ -1677,13 +1716,16 @@ function renderCalendar(){
     const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
     const dayLogs=calLogs.filter(l=>l.date===dateStr);
-    const entries=dayLogs.map(l=>{
+    let entries='';
+    if(dayLogs.length===1){
+      // 단일: 포스터 세로로 크게
+      const l=dayLogs[0];
       const w=works.find(x=>x.id===l.workId);
       const withPills=(l.with||[]).map(p=>`<span class="cal-entry-with-pill">${p}</span>`).join('');
       const thumb=w?.poster
         ?`<img class="cal-entry-thumb" src="${w.poster}">`
         :`<div class="cal-entry-thumb-empty"></div>`;
-      return `<div class="cal-entry type-${w?.type||''}" onclick="event.stopPropagation();openCalEdit('${l.id}')">
+      entries=`<div class="cal-entry type-${w?.type||''}" onclick="event.stopPropagation();openCalEdit('${l.id}')">
         ${thumb}
         <div class="cal-entry-info">
           <div class="cal-entry-title">${w?.title||'?'}</div>
@@ -1691,7 +1733,25 @@ function renderCalendar(){
           ${withPills?`<div class="cal-entry-with">${withPills}</div>`:''}
         </div>
       </div>`;
-    }).join('');
+    } else if(dayLogs.length>1){
+      // 다중: 2열 그리드, 호버 시 정보 오버레이
+      const items=dayLogs.map(l=>{
+        const w=works.find(x=>x.id===l.workId);
+        const withPills=(l.with||[]).map(p=>`<span class="cal-multi-with-pill">${p}</span>`).join('');
+        const thumb=w?.poster
+          ?`<img class="cal-multi-thumb" src="${w.poster}">`
+          :`<div class="cal-multi-thumb-empty"></div>`;
+        return `<div class="cal-multi-item type-${w?.type||''}" onclick="event.stopPropagation();openCalEdit('${l.id}')">
+          ${thumb}
+          <div class="cal-multi-overlay">
+            <div class="cal-multi-title">${w?.title||'?'}</div>
+            ${l.ep?`<div class="cal-multi-ep">${l.ep}화</div>`:''}
+            ${withPills?`<div class="cal-multi-with">${withPills}</div>`:''}
+          </div>
+        </div>`;
+      }).join('');
+      entries=`<div class="cal-multi">${items}</div>`;
+    }
     html+=`<div class="cal-cell${isToday?' today':''}" onclick="openCalModalDate('${dateStr}')">
       <div class="cal-date">${String(d).padStart(2,'0')}</div>${entries}
     </div>`;
@@ -1935,15 +1995,22 @@ async function tmdbSearch(){
       const origTitle = item.original_title||item.original_name||'';
       const year = (item.release_date||item.first_air_date||'').slice(0,4);
       const mtype = item.media_type==='movie'||(!item.media_type&&item.title) ? '영화' : '드라마';
-      const thumb = item.poster_path ? `<img src="${TMDB_IMG}${item.poster_path}" style="width:36px;height:54px;object-fit:cover;flex-shrink:0;border:1px solid var(--gray1)">` : `<div style="width:36px;height:54px;background:var(--gray1);flex-shrink:0"></div>`;
-      return `<div onclick="tmdbSelect(${item.id},'${item.media_type||( item.title?'movie':'tv')}')"
-        style="display:flex;gap:12px;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--gray1);transition:background .1s"
-        onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background=''">
+      const mediaSlug = item.media_type==='movie'||(!item.media_type&&item.title) ? 'movie' : 'tv';
+      const tmdbUrl = `https://www.themoviedb.org/${mediaSlug}/${item.id}`;
+      const thumb = item.poster_path
+        ? `<img src="${TMDB_IMG}${item.poster_path}" style="width:36px;height:54px;object-fit:cover;flex-shrink:0;border:1px solid var(--gray1)">`
+        : `<div style="width:36px;height:54px;background:var(--gray1);flex-shrink:0"></div>`;
+      return `<div style="display:flex;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--gray1);">
         ${thumb}
-        <div style="min-width:0">
+        <div style="min-width:0;flex:1;cursor:pointer" onclick="tmdbSelect(${item.id},'${item.media_type||(item.title?'movie':'tv')}')">
           <div style="font-weight:700;font-size:13px;color:var(--black)">${title}</div>
           <div style="font-size:11px;color:var(--gray3);margin-top:2px">${origTitle}${year?' · '+year:''} · ${mtype}</div>
         </div>
+        <a href="${tmdbUrl}" target="_blank" rel="noopener"
+          style="flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--gray3);border:1px solid var(--gray2);padding:3px 9px;white-space:nowrap;text-decoration:none"
+          onmouseover="this.style.borderColor='var(--black)';this.style.color='var(--black)'"
+          onmouseout="this.style.borderColor='var(--gray2)';this.style.color='var(--gray3)'"
+          onclick="event.stopPropagation()">TMDB ↗</a>
       </div>`;
     }).join('');
   }catch(e){
@@ -1970,38 +2037,39 @@ async function tmdbSelect(id, mediaType){
 
   try{
     const type = mediaType==='movie' ? 'movie' : 'tv';
+    // 한국어 상세정보
     const detailUrl = `https://api.themoviedb.org/3/${type}/${id}${qs}&append_to_response=credits`;
     const res = await fetch(detailUrl, { headers });
     if(!res.ok) throw new Error('상세 정보 오류 '+res.status);
     const d = await res.json();
 
-    // 한국어 없으면 영어로 폴백
-    let title = d.title||d.name||'';
-    let origTitle = d.original_title||d.original_name||'';
+    // 한국어 크레딧 별도 요청 (이름이 한국어로 제공되는 경우)
+    const koQs = isBearer ? '?language=ko-KR' : `?api_key=${key}&language=ko-KR`;
+    let koCredits = null;
+    try{
+      const koRes = await fetch(`https://api.themoviedb.org/3/${type}/${id}/credits${koQs}`, { headers });
+      if(koRes.ok) koCredits = await koRes.json();
+    }catch(_){}
+
+    const credits = d.credits||{};
+    const castList = koCredits?.cast?.length ? koCredits.cast : (credits.cast||[]);
+    const crewList = koCredits?.crew?.length ? koCredits.crew : (credits.crew||[]);
+
+    const title = d.title||d.name||'';
+    const origTitle = d.original_title||d.original_name||'';
     const year = (d.release_date||d.first_air_date||'').slice(0,4);
     const workType = type==='movie' ? '영화' : '드라마';
-
-    // 장르
     const genres = (d.genres||[]).map(g=>g.name);
 
-    // 크레딧
-    const credits = d.credits||{};
-    // 감독 (영화) 또는 연출 (TV)
     let director = '';
     if(type==='movie'){
-      const dir = (credits.crew||[]).find(c=>c.job==='Director');
+      const dir = crewList.find(c=>c.job==='Director');
       director = dir ? dir.name : '';
     } else {
-      // TV: created_by 또는 crew에서 Director
       director = (d.created_by||[]).map(c=>c.name).join(', ') ||
-                 (credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name).slice(0,2).join(', ');
+                 crewList.filter(c=>c.job==='Director').map(c=>c.name).slice(0,2).join(', ');
     }
-
-    // 주연 (cast 상위 6명)
-    const cast = (credits.cast||[]).slice(0,6).map(c=>c.name);
-
-    // 포스터
-    const posterPath = d.poster_path;
+    const cast = castList.slice(0,6).map(c=>c.name);
 
     // 폼에 채우기
     if(title)     document.getElementById('input-title').value = title;
@@ -2019,7 +2087,14 @@ async function tmdbSelect(id, mediaType){
       setTagsArr('cast', cast, 'cast-wrap', 'cast-input', 'input-cast');
     }
 
+    const tmdbPageUrl = `https://www.themoviedb.org/${type}/${id}`;
+    const tmdbLink = `<a href="${tmdbPageUrl}" target="_blank" rel="noopener"
+      style="display:inline-block;margin-top:6px;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--gray3);border:1px solid var(--gray2);padding:3px 10px;text-decoration:none"
+      onmouseover="this.style.borderColor='var(--black)';this.style.color='var(--black)'"
+      onmouseout="this.style.borderColor='var(--gray2)';this.style.color='var(--gray3)'">TMDB에서 포스터 보기 ↗</a>`;
+
     // 포스터 다운로드
+    const posterPath = d.poster_path;
     if(posterPath){
       try{
         const imgRes = await fetch(TMDB_IMG+posterPath);
@@ -2028,14 +2103,14 @@ async function tmdbSelect(id, mediaType){
           url=>setImgPreview('poster-preview','poster-ph','poster-rm-btn','input-poster',url),
           400, true);
         statusEl.style.borderColor='#1a8a3a'; statusEl.style.color='#1a6a2a';
-        statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 모두 채웠어요. (포스터 포함)`;
+        statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 모두 채웠어요. (포스터 포함)<br>${tmdbLink}`;
       }catch(_){
         statusEl.style.borderColor='#1a8a3a'; statusEl.style.color='#1a6a2a';
-        statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 채웠어요. 포스터는 직접 추가해주세요.`;
+        statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 채웠어요. 포스터는 직접 추가해주세요.<br>${tmdbLink}`;
       }
     } else {
       statusEl.style.borderColor='#1a8a3a'; statusEl.style.color='#1a6a2a';
-      statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 채웠어요.`;
+      statusEl.innerHTML=`✓ <strong>${title}</strong> 정보를 채웠어요.<br>${tmdbLink}`;
     }
     document.getElementById('tmdb-search-input').value='';
 
