@@ -414,6 +414,28 @@ body{
   font-family:'Bebas Neue',sans-serif;
   font-size:52px;line-height:.9;letter-spacing:.02em;color:var(--black);
 }
+.memo-subtab{
+  padding:12px 24px;border:none;background:none;
+  font-family:'Noto Sans KR',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;cursor:pointer;
+  color:var(--gray3);border-bottom:3px solid transparent;margin-bottom:-2px;
+  transition:color .1s;
+}
+.memo-subtab:hover{color:var(--black);}
+.memo-subtab.active{color:var(--black);border-bottom-color:var(--black);}
+/* 에피소드 기록 카드 */
+.ep-note-card{
+  padding:18px 22px;border-bottom:1px solid var(--gray1);
+  border-left:4px solid var(--black);cursor:default;
+}
+.ep-note-card:hover{background:var(--off);}
+.ep-note-header{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;}
+.ep-note-work{font-size:12px;font-weight:700;color:var(--black);}
+.ep-note-num{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--black);line-height:1;}
+.ep-note-cha{font-size:10px;color:var(--gray3);font-weight:700;letter-spacing:.08em;}
+.ep-note-time{font-size:11px;color:var(--gray3);font-weight:700;}
+.ep-note-text{font-size:13px;line-height:1.8;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
+.ep-note-img{max-width:400px;width:100%;margin-top:10px;border:1px solid var(--gray1);cursor:zoom-in;display:block;}
 .memo-layout{
   display:grid;grid-template-columns:200px 1fr;
   border-top:none;
@@ -892,23 +914,52 @@ select.form-input{cursor:pointer;}
   <div class="page-inner">
     <div class="memo-page-header">
       <div class="memo-big-title">NOTES</div>
-      <button class="btn btn-primary" onclick="openMemoModal()">+ 메모 추가</button>
+      <button class="btn btn-primary" id="memo-add-btn" onclick="openMemoModal()">+ 메모 추가</button>
     </div>
-    <div class="toolbar" style="border-bottom:1px solid var(--gray1)">
-      <div class="search-box">
-        <span class="search-icon">⌕</span>
-        <input id="memo-search" placeholder="대사, 장면, 키워드..." oninput="renderMemos()">
+    <!-- 서브탭 -->
+    <div style="display:flex;border-bottom:2px solid var(--black);margin-bottom:0">
+      <button class="memo-subtab active" id="subtab-memo" onclick="switchMemoSubtab('memo')">메모</button>
+      <button class="memo-subtab" id="subtab-ep" onclick="switchMemoSubtab('ep')">에피소드 기록</button>
+    </div>
+
+    <!-- 메모 패널 -->
+    <div id="memo-panel">
+      <div class="toolbar" style="border-bottom:1px solid var(--gray1);margin-top:0">
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input id="memo-search" placeholder="대사, 장면, 키워드..." oninput="renderMemos()">
+        </div>
+      </div>
+      <div class="memo-layout">
+        <div class="memo-sidebar">
+          <div class="memo-sidebar-head">작품별</div>
+          <div id="memo-sb-list"></div>
+        </div>
+        <div class="memo-main">
+          <div class="memo-count-bar" id="memo-count">0 MEMOS</div>
+          <div id="memo-list"></div>
+          <div id="memo-pagination" class="pagination"></div>
+        </div>
       </div>
     </div>
-    <div class="memo-layout">
-      <div class="memo-sidebar">
-        <div class="memo-sidebar-head">작품별</div>
-        <div id="memo-sb-list"></div>
+
+    <!-- 에피소드 기록 패널 -->
+    <div id="ep-panel" style="display:none">
+      <div class="toolbar" style="border-bottom:1px solid var(--gray1);margin-top:0">
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input id="ep-notes-search" placeholder="작품, 메모 검색..." oninput="renderEpNotes()">
+        </div>
       </div>
-      <div class="memo-main">
-        <div class="memo-count-bar" id="memo-count">0 MEMOS</div>
-        <div id="memo-list"></div>
-        <div id="memo-pagination" class="pagination"></div>
+      <div class="memo-layout">
+        <div class="memo-sidebar">
+          <div class="memo-sidebar-head">작품별</div>
+          <div id="ep-sb-list"></div>
+        </div>
+        <div class="memo-main">
+          <div class="memo-count-bar" id="ep-notes-count">0 EPISODES</div>
+          <div id="ep-notes-list"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1024,12 +1075,15 @@ select.form-input{cursor:pointer;}
         <div class="form-group"><label class="form-label">연도</label><input class="form-input" id="input-year" type="number" placeholder="2024"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">감독</label><div class="ac-wrap"><input class="form-input" id="input-director" placeholder="감독" autocomplete="off" oninput="acShow('input-director','ac-director','directors')" onfocus="acShow('input-director','ac-director','directors')"><div class="ac-dd" id="ac-director"></div></div></div>
+        <div class="form-group"><label class="form-label">감독 · 연출</label><div class="ac-wrap"><input class="form-input" id="input-director" placeholder="감독 · 연출" autocomplete="off" oninput="acShow('input-director','ac-director','directors')" onfocus="acShow('input-director','ac-director','directors')"><div class="ac-dd" id="ac-director"></div></div></div>
+        <div class="form-group"><label class="form-label">작가</label><div class="ac-wrap"><input class="form-input" id="input-writer" placeholder="작가" autocomplete="off" oninput="acShow('input-writer','ac-writer','writers')" onfocus="acShow('input-writer','ac-writer','writers')"><div class="ac-dd" id="ac-writer"></div></div></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label class="form-label">주요 배우</label><div class="ac-wrap"><div class="tag-wrap" id="cast-wrap" onclick="document.getElementById('cast-input').focus()"></div><input type="hidden" id="input-cast"><div class="ac-dd" id="ac-cast"></div></div></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">플랫폼</label><select class="form-input" id="input-platform"></select></div>
-        <div class="form-group"><label class="form-label">국가</label><input class="form-input" id="input-country" placeholder="한국, 미국..."></div>
+        <div class="form-group"><label class="form-label">제작 · 플랫폼</label><select class="form-input" id="input-platform"></select></div>
+        <div class="form-group"><label class="form-label">국가</label><select class="form-input" id="input-country"></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">장르</label><div class="ac-wrap"><div class="tag-wrap" id="genre-wrap" onclick="document.getElementById('genre-input').focus()"></div><input type="hidden" id="input-genre"><div class="ac-dd" id="ac-genre"></div></div></div>
@@ -1059,7 +1113,17 @@ select.form-input{cursor:pointer;}
     <div class="modal-body">
       <div class="form-group"><label class="form-label">날짜</label><input class="form-input" id="cal-date" type="date"></div>
       <div class="form-group"><label class="form-label">작품</label><div class="ac-wrap"><input class="form-input" id="cal-work-search" placeholder="작품 검색..." autocomplete="off" oninput="showWorkDd('cal-work-search','cal-work-dd','cal-work-id','onCalWork')" onfocus="showWorkDd('cal-work-search','cal-work-dd','cal-work-id','onCalWork')"><input type="hidden" id="cal-work-id"><div class="work-dd" id="cal-work-dd"></div></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">에피소드</label><input class="form-input" id="cal-ep" type="number" placeholder="0"></div><div class="form-group"><label class="form-label">총 에피소드</label><input class="form-input" id="cal-total" type="number" placeholder="0"></div></div>
+      <div class="form-group">
+        <label class="form-label">시청 구간</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input class="form-input" id="cal-ep-from" type="number" placeholder="시작 화" style="flex:1">
+          <span style="font-size:13px;color:var(--gray3);flex-shrink:0">~</span>
+          <input class="form-input" id="cal-ep" type="number" placeholder="끝 화" style="flex:1">
+          <span style="font-size:11px;color:var(--gray3);flex-shrink:0;white-space:nowrap">화 / 또는</span>
+          <input class="form-input" id="cal-ep-time" placeholder="~1:23 / 0:30~" style="flex:1.2">
+        </div>
+        <div style="font-size:10px;color:var(--gray3);margin-top:5px">드라마: 시작화~끝화 / 영화: 시간 구간 (예: ~1:23, 0:30~1:05)</div>
+      </div>
       <div class="form-group">
         <label class="form-label">함께 본 사람</label>
         <div class="ac-wrap">
@@ -1081,7 +1145,17 @@ select.form-input{cursor:pointer;}
     <div class="modal-body">
       <input type="hidden" id="cal-edit-id">
       <div class="form-group"><label class="form-label">날짜</label><input class="form-input" id="cal-edit-date" type="date"></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">에피소드</label><input class="form-input" id="cal-edit-ep" type="number"></div><div class="form-group"><label class="form-label">총 에피소드</label><input class="form-input" id="cal-edit-total" type="number"></div></div>
+      <div class="form-group">
+        <label class="form-label">시청 구간</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input class="form-input" id="cal-edit-ep-from" type="number" placeholder="시작 화" style="flex:1">
+          <span style="font-size:13px;color:var(--gray3);flex-shrink:0">~</span>
+          <input class="form-input" id="cal-edit-ep" type="number" placeholder="끝 화" style="flex:1">
+          <span style="font-size:11px;color:var(--gray3);flex-shrink:0;white-space:nowrap">화 / 또는</span>
+          <input class="form-input" id="cal-edit-ep-time" placeholder="~1:23 / 0:30~" style="flex:1.2">
+        </div>
+        <div style="font-size:10px;color:var(--gray3);margin-top:5px">드라마: 시작화~끝화 / 영화: 시간 구간</div>
+      </div>
       <div class="form-group">
         <label class="form-label">함께 본 사람</label>
         <div class="ac-wrap">
@@ -1161,10 +1235,12 @@ let calLogs = JSON.parse(localStorage.getItem('cl_cal')    || '[]');
 let memos   = JSON.parse(localStorage.getItem('cl_memos')  || '[]');
 
 const DEFAULT_SETTINGS = {
-  platforms: ['넷플릭스','왓챠','웨이브','티빙','디즈니+','애플TV+','시즌','극장','기타'],
+  platforms: ['CGV','극장','넷플릭스','디즈니+','라프텔','메가박스','롯데시네마','애플TV+','왓챠','웨이브','티빙','시즌','기타'],
   genres: ['드라마','로맨스','스릴러','호러','액션','SF','판타지','미스터리','코미디','다큐','애니','음악','역사'],
   keywords: ['복수극','타임루프','이세계','좀비','비선형서사','미스터리박스','앙상블','성장물','재난','초능력','형사물','법정물'],
+  countries: ['그리스','나이지리아','네덜란드','노르웨이','뉴질랜드','대만','덴마크','독일','러시아','멕시코','미국','벨기에','브라질','스웨덴','스위스','스페인','아르헨티나','아일랜드','영국','오스트레일리아','오스트리아','이란','이스라엘','이탈리아','인도','일본','중국','체코','캐나다','터키','태국','포르투갈','폴란드','프랑스','핀란드','한국','헝가리','홍콩'],
   directors: [],
+  writers: [],
   actors: [],
   companions: [],
   platformColors: {}
@@ -1172,8 +1248,10 @@ const DEFAULT_SETTINGS = {
 let settings = JSON.parse(localStorage.getItem('cl_settings')||'null') || JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 if(!settings.platformColors) settings.platformColors={};
 if(!settings.directors) settings.directors=[];
+if(!settings.writers) settings.writers=[];
 if(!settings.actors) settings.actors=[];
 if(!settings.companions) settings.companions=[];
+if(!settings.countries) settings.countries=[...DEFAULT_SETTINGS.countries];
 
 function save(){
   try{
@@ -1215,7 +1293,7 @@ function showPage(id,el){
   if(id==='home')     renderHome();
   if(id==='works')    { worksPage=1; renderWorks(); }
   if(id==='calendar') renderCalendar();
-  if(id==='memo')     { memoPage=1; renderMemos(); renderMemoSb(); }
+  if(id==='memo')     { memoPage=1; if(memoSubtab==='ep') renderEpNotes(); else { renderMemos(); renderMemoSb(); } }
   if(id==='settings') { renderSettings(); updateSyncDot(); }
 }
 
@@ -1303,7 +1381,7 @@ function setView(v){
 function statusBadge(s, finished){
   if(s==='봄'){
     const n = parseInt(finished)||1;
-    const label = n>1 ? `${n}회` : '봄';
+    const label = `${n}회`;
     return `<span class="badge badge-봄">${label}</span>`;
   }
   if(s==='중단') return '<span class="badge badge-중단">중단</span>';
@@ -1326,7 +1404,7 @@ function cardHTML(w){
     ? `<img class="card-poster" src="${w.poster}">`
     : `<div class="card-poster-empty"><div class="card-poster-empty-txt">NO IMAGE</div></div>`;
   const badge = w.status==='봄'?'csb-봄':w.status==='중단'?'csb-중단':'csb-예정';
-  const badgeLabel = w.status==='봄' ? (parseInt(w.finished)>1 ? `${parseInt(w.finished)}회` : '봄') : w.status;
+  const badgeLabel = w.status==='봄' ? `${parseInt(w.finished)||1}회` : w.status;
   return `<div class="media-card" onclick="openDetail('${w.id}')">
     ${poster}
     <div class="card-status-badge ${badge}">${badgeLabel}</div>
@@ -1452,7 +1530,7 @@ function openDetail(id){
         return `<div class="watch-card" onclick="openCalEdit('${l.id}')">
           <div class="watch-card-row1">
             <span class="watch-card-date">${l.date}</span>
-            <span class="watch-card-ep">${l.ep?l.ep+'화':''}</span>
+            <span class="watch-card-ep">${epLabel(l)}</span>
             <span class="watch-card-note">${l.note||''}</span>
           </div>
           ${withPills?`<div class="watch-card-row2"><span class="watch-card-with-label">with</span>${withPills}</div>`:''}
@@ -1469,6 +1547,7 @@ function openDetail(id){
         ${w.origTitle?`<div style="font-size:13px;color:#999;margin-bottom:10px;letter-spacing:.04em">${w.origTitle}</div>`:''}
         <div class="detail-meta-row">
           ${w.director?`<span>DIR. ${w.director}</span>`:''}
+          ${w.writer?`<span>WRI. ${w.writer}</span>`:''}
           ${w.cast&&w.cast.length?`<span>CAST. ${Array.isArray(w.cast)?w.cast.join(', '):w.cast}</span>`:''}
           ${w.platform?`<span>${w.platform}</span>`:''}
         </div>
@@ -1612,11 +1691,12 @@ function resetStar(){renderStarRow();setStar(0);}
 function openAddModal(){
   document.getElementById('add-modal-title').textContent='작품 추가';
   document.getElementById('edit-id').value='';
-  ['input-title','input-orig-title','input-year','input-director','input-country','input-total-ep','input-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['input-title','input-orig-title','input-year','input-director','input-writer','input-total-ep','input-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('input-type').value='영화';
   document.getElementById('input-status').value='봄';
-  document.getElementById('input-finished').value='완결';
+  document.getElementById('input-finished').value='';
   fillPlatformSelect('');
+  fillCountrySelect('');
   resetStar();
   initTagInput('genre-wrap','genre-input','input-genre','ac-genre','genres','genre');
   initTagInput('kw-wrap','kw-input','input-kw','ac-kw','keywords','kw');
@@ -1643,13 +1723,14 @@ function openEditModal(id){
   document.getElementById('input-orig-title').value=w.origTitle||'';
   document.getElementById('input-year').value=w.year||'';
   document.getElementById('input-director').value=w.director||'';
-  document.getElementById('input-country').value=w.country||'';
+  document.getElementById('input-writer').value=w.writer||'';
   document.getElementById('input-total-ep').value=w.totalEp||'';
   document.getElementById('input-note').value=w.note||'';
   document.getElementById('input-type').value=w.type||'영화';
   document.getElementById('input-status').value=w.status||'봄';
   document.getElementById('input-finished').value = parseInt(w.finished)||'';
   fillPlatformSelect(w.platform||'');
+  fillCountrySelect(w.country||'');
   renderStarRow();
   setStar(w.stars||0);
   initTagInput('genre-wrap','genre-input','input-genre','ac-genre','genres','genre');
@@ -1664,7 +1745,14 @@ function openEditModal(id){
 }
 function fillPlatformSelect(sel){
   const el=document.getElementById('input-platform');
-  el.innerHTML=`<option value="">선택</option>`+settings.platforms.map(p=>`<option${p===sel?' selected':''}>${p}</option>`).join('');
+  const sorted=[...settings.platforms].sort((a,b)=>a.localeCompare(b,'ko'));
+  el.innerHTML=`<option value="">선택</option>`+sorted.map(p=>`<option${p===sel?' selected':''}>${p}</option>`).join('');
+}
+function fillCountrySelect(sel){
+  const el=document.getElementById('input-country');
+  if(!el) return;
+  const sorted=[...settings.countries].sort((a,b)=>a.localeCompare(b,'ko'));
+  el.innerHTML=`<option value="">선택</option>`+sorted.map(c=>`<option${c===sel?' selected':''}>${c}</option>`).join('');
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function saveWork(){
@@ -1678,9 +1766,10 @@ function saveWork(){
     type:document.getElementById('input-type').value,
     year:document.getElementById('input-year').value.trim(),
     director:document.getElementById('input-director').value.trim(),
+    writer:document.getElementById('input-writer').value.trim(),
     cast:(document.getElementById('input-cast').value||'').split(',').map(x=>x.trim()).filter(Boolean),
     platform:document.getElementById('input-platform').value,
-    country:document.getElementById('input-country').value.trim(),
+    country:document.getElementById('input-country').value,
     genres:(document.getElementById('input-genre').value||'').split(',').map(x=>x.trim()).filter(Boolean),
     keywords:(document.getElementById('input-kw').value||'').split(',').map(x=>x.trim()).filter(Boolean),
     stars:parseFloat(document.getElementById('input-stars').value)||0,
@@ -1695,6 +1784,7 @@ function saveWork(){
   };
   if(existing){Object.assign(existing,w);}else{works.unshift(w);}
   if(w.director){const s=new Set(settings.directors);s.add(w.director);settings.directors=[...s];}
+  if(w.writer){const s=new Set(settings.writers);s.add(w.writer);settings.writers=[...s];}
   if(w.cast&&w.cast.length){const s=new Set(settings.actors);w.cast.forEach(c=>s.add(c));settings.actors=[...s];}
   save();closeModal('add-modal');renderWorks();renderHome();
 }
@@ -1729,7 +1819,7 @@ function renderCalendar(){
         ${thumb}
         <div class="cal-entry-info">
           <div class="cal-entry-title">${w?.title||'?'}</div>
-          ${l.ep?`<div class="cal-entry-ep">${l.ep}화</div>`:''}
+          ${epLabel(l)?`<div class="cal-entry-ep">${epLabel(l)}</div>`:''}
           ${withPills?`<div class="cal-entry-with">${withPills}</div>`:''}
         </div>
       </div>`;
@@ -1745,7 +1835,7 @@ function renderCalendar(){
           ${thumb}
           <div class="cal-multi-overlay">
             <div class="cal-multi-title">${w?.title||'?'}</div>
-            ${l.ep?`<div class="cal-multi-ep">${l.ep}화</div>`:''}
+            ${epLabel(l)?`<div class="cal-multi-ep">${epLabel(l)}</div>`:''}
             ${withPills?`<div class="cal-multi-with">${withPills}</div>`:''}
           </div>
         </div>`;
@@ -1763,19 +1853,15 @@ function renderCalendar(){
 function openCalModal(){
   const today=new Date();
   document.getElementById('cal-date').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  ['cal-work-search','cal-note'].forEach(id=>document.getElementById(id).value='');
+  ['cal-work-search','cal-note','cal-ep','cal-ep-from','cal-ep-time'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cal-work-id').value='';
-  document.getElementById('cal-ep').value='';
-  document.getElementById('cal-total').value='';
   initTagInput('cal-with-wrap','cal-with-input','cal-with','ac-cal-with','companions','calwith');
   document.getElementById('cal-modal').classList.add('open');
 }
 function openCalModalDate(dateStr){
   document.getElementById('cal-date').value=dateStr;
-  ['cal-work-search','cal-note'].forEach(id=>document.getElementById(id).value='');
+  ['cal-work-search','cal-note','cal-ep','cal-ep-from','cal-ep-time'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cal-work-id').value='';
-  document.getElementById('cal-ep').value='';
-  document.getElementById('cal-total').value='';
   initTagInput('cal-with-wrap','cal-with-input','cal-with','ac-cal-with','companions','calwith');
   document.getElementById('cal-modal').classList.add('open');
 }
@@ -1785,7 +1871,10 @@ function saveCalLog(){
   if(!date){alert('날짜를 선택하세요.');return;}
   if(!wid){alert('작품을 선택하세요.');return;}
   const withArr=(document.getElementById('cal-with').value||'').split(',').map(x=>x.trim()).filter(Boolean);
-  calLogs.push({id:uid(),workId:wid,date,ep:parseInt(document.getElementById('cal-ep').value)||0,total:parseInt(document.getElementById('cal-total').value)||0,note:document.getElementById('cal-note').value.trim(),with:withArr});
+  const epFrom=parseInt(document.getElementById('cal-ep-from').value)||0;
+  const ep=parseInt(document.getElementById('cal-ep').value)||0;
+  const epTime=(document.getElementById('cal-ep-time').value||'').trim();
+  calLogs.push({id:uid(),workId:wid,date,epFrom,ep,epTime,note:document.getElementById('cal-note').value.trim(),with:withArr});
   withArr.forEach(p=>{ if(!settings.companions.includes(p)) settings.companions.push(p); });
   const w=works.find(x=>x.id===wid);if(w)w.updatedAt=Date.now();
   save();closeModal('cal-modal');renderCalendar();
@@ -1796,8 +1885,9 @@ function openCalEdit(id){
   _calEditFromDetail=document.getElementById('detail-overlay').classList.contains('open') ? l.workId : null;
   document.getElementById('cal-edit-id').value=id;
   document.getElementById('cal-edit-date').value=l.date;
+  document.getElementById('cal-edit-ep-from').value=l.epFrom||'';
   document.getElementById('cal-edit-ep').value=l.ep||'';
-  document.getElementById('cal-edit-total').value=l.total||'';
+  document.getElementById('cal-edit-ep-time').value=l.epTime||'';
   document.getElementById('cal-edit-note').value=l.note||'';
   initTagInput('cal-edit-with-wrap','cal-edit-with-input','cal-edit-with','ac-cal-edit-with','companions','caleditwith');
   setTagsArr('caleditwith',l.with||[],'cal-edit-with-wrap','cal-edit-with-input','cal-edit-with');
@@ -1807,8 +1897,9 @@ function saveCalEdit(){
   const id=document.getElementById('cal-edit-id').value;
   const l=calLogs.find(x=>x.id===id);if(!l)return;
   l.date=document.getElementById('cal-edit-date').value;
+  l.epFrom=parseInt(document.getElementById('cal-edit-ep-from').value)||0;
   l.ep=parseInt(document.getElementById('cal-edit-ep').value)||0;
-  l.total=parseInt(document.getElementById('cal-edit-total').value)||0;
+  l.epTime=(document.getElementById('cal-edit-ep-time').value||'').trim();
   l.note=document.getElementById('cal-edit-note').value.trim();
   const withArr=(document.getElementById('cal-edit-with').value||'').split(',').map(x=>x.trim()).filter(Boolean);
   l.with=withArr;
@@ -1825,13 +1916,92 @@ function deleteCalLog(){
 function onCalWork(wid,title){
   document.getElementById('cal-work-id').value=wid;
   document.getElementById('cal-work-search').value=title;
-  const w=works.find(x=>x.id===wid);
-  if(w&&w.totalEp)document.getElementById('cal-total').value=w.totalEp;
+}
+
+// 시청 구간 표시 헬퍼
+function epLabel(l){
+  if(l.epTime) return l.epTime;
+  if(l.epFrom && l.ep) return `${l.epFrom}~${l.ep}화`;
+  if(l.epFrom && !l.ep) return `${l.epFrom}화~`;
+  if(l.ep) return `${l.ep}화`;
+  return '';
 }
 
 // ── MEMO ──
-let memoFilter='all',memoPage=1;
+let memoFilter='all',memoPage=1,memoSubtab='memo';
 const MEMO_PER_PAGE=20;
+// ── MEMO SUBTAB ──
+function switchMemoSubtab(tab){
+  memoSubtab = tab;
+  document.getElementById('subtab-memo').classList.toggle('active', tab==='memo');
+  document.getElementById('subtab-ep').classList.toggle('active', tab==='ep');
+  document.getElementById('memo-panel').style.display = tab==='memo' ? '' : 'none';
+  document.getElementById('ep-panel').style.display = tab==='ep' ? '' : 'none';
+  document.getElementById('memo-add-btn').style.display = tab==='memo' ? '' : 'none';
+  if(tab==='ep') renderEpNotes();
+  else { renderMemos(); renderMemoSb(); }
+}
+
+// ── EP NOTES (에피소드 기록 전체 목록) ──
+let epNotesFilter = 'all';
+function setEpNotesFilter(wid){
+  epNotesFilter = wid;
+  renderEpNotes();
+  document.querySelectorAll('.ep-sb-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.wid===wid);
+  });
+}
+function renderEpNotes(){
+  const q = (document.getElementById('ep-notes-search')?.value||'').toLowerCase();
+  // 모든 에피소드 기록을 작품에서 뽑아 평탄화
+  let all = [];
+  works.forEach(w=>{
+    (w.episodes||[]).forEach((ep,idx)=>{
+      all.push({w, ep, idx});
+    });
+  });
+  // 필터
+  if(epNotesFilter!=='all') all=all.filter(x=>x.w.id===epNotesFilter);
+  if(q) all=all.filter(x=>
+    x.w.title.toLowerCase().includes(q)||
+    (x.ep.memo||'').toLowerCase().includes(q)||
+    (x.ep.time||'').toLowerCase().includes(q)
+  );
+
+  document.getElementById('ep-notes-count').textContent=`${all.length} EPISODES`;
+
+  // 사이드바
+  const counts={};
+  works.forEach(w=>{ const n=(w.episodes||[]).length; if(n) counts[w.id]=n; });
+  let sbHtml=`<div class="memo-sb-item ep-sb-item${epNotesFilter==='all'?' active':''}" data-wid="all" onclick="setEpNotesFilter('all')">전체<span class="memo-sb-cnt">${all.length+(epNotesFilter!=='all'?0:0)}</span></div>`;
+  // 사이드바 전체 수 정확히
+  const totalEps = works.reduce((s,w)=>(s+(w.episodes||[]).length),0);
+  sbHtml=`<div class="memo-sb-item ep-sb-item${epNotesFilter==='all'?' active':''}" data-wid="all" onclick="setEpNotesFilter('all')">전체<span class="memo-sb-cnt">${totalEps}</span></div>`;
+  sbHtml+=works.filter(w=>(w.episodes||[]).length).map(w=>
+    `<div class="memo-sb-item ep-sb-item${epNotesFilter===w.id?' active':''}" data-wid="${w.id}" onclick="setEpNotesFilter('${w.id}')">${w.title}<span class="memo-sb-cnt">${(w.episodes||[]).length}</span></div>`
+  ).join('');
+  document.getElementById('ep-sb-list').innerHTML=sbHtml;
+
+  if(!all.length){
+    document.getElementById('ep-notes-list').innerHTML=`<div style="padding:40px;text-align:center;color:var(--gray2);font-size:11px;letter-spacing:.15em;text-transform:uppercase">에피소드 기록 없음</div>`;
+    return;
+  }
+
+  document.getElementById('ep-notes-list').innerHTML=all.map(({w,ep,idx})=>`
+    <div class="ep-note-card">
+      <div class="ep-note-header">
+        <span class="ep-note-work">${w.title}</span>
+        <span class="ep-note-num">${String(ep.num).padStart(2,'0')}</span>
+        <span class="ep-note-cha">화</span>
+        ${ep.time?`<span class="ep-note-time">⏱ ${ep.time}</span>`:''}
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="openEpEdit('${w.id}',${idx})">수정</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEp('${w.id}',${idx});renderEpNotes()">삭제</button>
+      </div>
+      ${ep.memo?`<div class="ep-note-text">${ep.memo}</div>`:''}
+      ${ep.img?`<img class="ep-note-img" src="${ep.img}" onclick="openLightbox('${ep.img.replace(/'/g,"\\'")}')">`:''}
+    </div>`).join('');
+}
+
 function renderMemos(){
   const q=(document.getElementById('memo-search')?.value||'').toLowerCase();
   let list=memos.filter(m=>{
@@ -1896,7 +2066,7 @@ function saveMemoEdit(){
 
 // ── SETTINGS ──
 function renderSettings(){
-  const lists=[{key:'platforms',label:'플랫폼 / OTT'},{key:'genres',label:'장르'},{key:'keywords',label:'키워드'},{key:'directors',label:'감독'},{key:'actors',label:'배우'},{key:'companions',label:'함께 본 사람'}];
+  const lists=[{key:'platforms',label:'제작 · 플랫폼'},{key:'genres',label:'장르'},{key:'keywords',label:'키워드'},{key:'directors',label:'감독 · 연출'},{key:'writers',label:'작가'},{key:'actors',label:'배우'},{key:'countries',label:'국가'},{key:'companions',label:'함께 본 사람'}];
   document.getElementById('settings-grid').innerHTML=lists.map(({key,label})=>{
     const items=settings[key]||[];
     const rows=items.length
